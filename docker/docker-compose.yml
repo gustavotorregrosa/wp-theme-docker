@@ -1,0 +1,59 @@
+version: '3'
+services:
+
+    ftp-container:
+        image: kibatic/proftpd
+        restart: always
+        environment:
+            FTP_LIST: "gustavotorregrosa:gustavo01"
+            USERADD_OPTIONS: "-o --gid 33 --uid 33"
+        volumes:
+            - "../wordpress:/home/gustavotorregrosa"
+        networks:
+            - app-network
+
+    web:
+        image: nginx:latest
+        container_name: nginx
+        restart: always
+        ports:
+            - "80:80"
+        volumes:
+            - ../wordpress:/www
+            - ./site.conf:/etc/nginx/conf.d/site.conf
+        depends_on:
+            - php
+        networks:
+            - app-network
+
+    php:
+        build:
+            context: ./phpDockerFile
+            dockerfile: Dockerfile
+        container_name: php-fpm
+        volumes:
+            - ../wordpress:/www
+            - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+        depends_on:
+            - db
+        networks:
+            - app-network
+
+    db:
+        image: mysql:5.7
+        container_name: mysql
+        ports:
+            - 3306:3306
+        restart: always
+        tty: true
+        environment:
+            MYSQL_ROOT_PASSWORD: gustavo
+            MYSQL_DATABASE: meuwordpress
+            MYSQL_USER: gustavo
+            MYSQL_PASSWORD: gustavo
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge
